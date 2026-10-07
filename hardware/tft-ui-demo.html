@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>2.4寸TFT 音乐播放器界面（横版·侧边音量按需显示）</title>
+<style>
+:root{--bg:#0B0E14;--sf:#151A23;--card:#1C2333;--bd:#263045;
+--t1:#E8EDF4;--t2:#7A8BA6;--pri:#4FC3F7;--acc:#FFD54F;--ok:#66BB6A}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1d27;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--t1);gap:14px}
+.bezel{background:linear-gradient(145deg,#2c2f3a,#1e2028);border-radius:14px;padding:12px 14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);position:relative}
+.bezel::after{content:"320 × 240 · ILI9341 · 横版";position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:10px;color:#555;letter-spacing:1px}
+#screen{width:320px;height:240px;background:var(--bg);border-radius:4px;overflow:hidden;position:relative;display:flex;flex-direction:column;user-select:none}
+
+.status{height:22px;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 8px;gap:6px;font-size:11px;flex-shrink:0;z-index:6}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);animation:pulse 1.6s infinite}
+.dot.pause{background:var(--acc);box-shadow:0 0 6px var(--acc);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.status .mid{flex:1;text-align:center;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tags{display:flex;gap:4px;align-items:center}
+.tag{padding:1px 5px;border-radius:3px;font-size:10px;background:var(--card);color:var(--pri);border:1px solid var(--bd);white-space:nowrap}
+.tag.sd{color:var(--acc)}
+
+.main{flex:1;display:flex;align-items:center;padding:0 8px;gap:8px;position:relative;min-height:0}
+.cover{width:144px;height:144px;border-radius:8px;background:var(--card);border:1px solid var(--bd);flex-shrink:0;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.cover-art{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;opacity:.7}
+.cover .ring{position:absolute;width:40px;height:40px;border:2px solid rgba(79,195,247,.25);border-radius:50%}
+.cover.playing .ring{animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.info{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;height:144px}
+.title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.artist-line{font-size:10px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;justify-content:space-between}
+.lyric-box{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;overflow:hidden;mask-image:linear-gradient(to bottom,transparent 0%,black 10%,black 90%,transparent 100%)}
+.lyric-row{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .3s ease;line-height:1.4}
+.lyric-row.cur{font-size:13px;color:var(--pri);font-weight:700;text-shadow:0 0 8px rgba(79,195,247,.3)}
+.prog-wrap{margin-top:auto}
+.prog-bar{width:100%;height:6px;background:var(--sf);border-radius:3px;cursor:pointer;position:relative;border:1px solid var(--bd)}
+.prog-fill{height:100%;width:0;background:var(--pri);border-radius:3px;position:relative;transition:width .2s linear}
+.prog-fill::after{content:"";position:absolute;right:-4px;top:-3px;width:12px;height:12px;background:#fff;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,.5)}
+.time{display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-top:2px;font-variant-numeric:tabular-nums}
+.viz{position:absolute;right:8px;bottom:56px;width:40px;height:28px;display:flex;align-items:flex-end;gap:2px;opacity:.6}
+.viz b{display:block;width:3px;background:var(--pri);border-radius:1px 1px 0 0;transition:height .12s}
+
+.side-vol{position:absolute;left:0;top:22px;bottom:48px;width:24px;background:rgba(21,26,35,.92);border-right:1px solid var(--bd);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:8px 0;opacity:0;transition:opacity .3s;z-index:5;pointer-events:none}
+.side-vol.show{opacity:1}
+.side-vol-track{flex:1;width:4px;background:var(--sf);border-radius:2px;position:relative;margin:4px 0}
+.side-vol-fill{position:absolute;bottom:0;left:0;width:100%;background:var(--acc);border-radius:2px;transition:height .2s}
+.side-vol-txt{font-size:10px;color:var(--acc);font-variant-numeric:tabular-nums}
+
+.ctrl{height:48px;background:var(--sf);border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 6px;flex-shrink:0;z-index:6}
+.ctrl-g{display:flex;align-items:center;gap:4px}
+.btn{background:var(--card);border:1px solid var(--bd);color:var(--t1);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .1s,border-color .1s}
+.btn:hover{background:#253045;border-color:var(--pri)}.btn:active{transform:scale(.94)}
+.btn.sm{width:32px;height:32px;font-size:12px;color:var(--t2)}
+.btn.md{width:40px;height:40px;font-size:18px}
+.btn.lg{width:56px;height:40px;font-size:20px;background:var(--pri);color:#0b0e14;border-color:var(--pri);font-weight:700}
+.btn.lg:hover{background:#6dd0ff}.btn.on{color:var(--pri);border-color:var(--pri)}
+
+.playlist{position:absolute;inset:22px 0 0;background:var(--bg);display:none;flex-direction:column;z-index:10}
+.playlist.show{display:flex}
+.pl-head{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:12px;border-bottom:1px solid var(--bd);background:var(--sf);flex-shrink:0}
+.pl-list{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.pl-list::-webkit-scrollbar{width:4px}.pl-list::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.pl-item{height:26px;display:flex;align-items:center;padding:0 8px;gap:6px;font-size:11px;border-bottom:1px solid rgba(38,48,69,.5);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-item:nth-child(odd){background:rgba(21,26,35,.5)}
+.pl-item.cur{background:rgba(79,195,247,.12);color:var(--pri)}
+.pl-item.cur::before{content:"▶";font-size:9px;flex-shrink:0}
+.pl-item .n{color:var(--t2);width:22px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.pl-foot{height:26px;background:var(--sf);border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t2);flex-shrink:0}
+.hint{font-size:12px;color:#666;text-align:center}
+kbd{background:#2a2d38;padding:1px 6px;border-radius:3px;font-size:11px;color:#aaa;border:1px solid #3a3d48}
+</style>
+</head>
+<body>
+<div class="bezel"><div id="screen">
+ <div class="status">
+  <span class="dot" id="dot"></span><span id="stateText">正在播放</span>
+  <span class="mid" id="statusTitle">—</span>
+  <div class="tags">
+    <span class="tag" id="modeTag">🔁 列表循环</span>
+    <span class="tag sd">SD</span>
+    <span class="tag" id="volTag">🔊70</span>
+    <span class="tag">🔋86%</span>
+  </div>
+ </div>
+ <div class="main">
+  <div class="side-vol" id="sideVol">
+    <div class="side-vol-txt" id="sideVolTxt">70</div>
+    <div class="side-vol-track"><div class="side-vol-fill" id="sideVolFill" style="height:70%"></div></div>
+    <span style="font-size:10px;color:var(--t2)">🔊</span>
+  </div>
+  <div class="cover playing" id="cover"><div class="cover-art">🎵</div><div class="ring"></div></div>
+  <div class="info">
+   <div class="title" id="title">未加载曲目</div>
+   <div class="artist-line"><span id="artist">—</span><span id="idxTag">1/8</span></div>
+   <div class="lyric-box" id="lyricBox">
+    <div class="lyric-row" id="lPrev"></div>
+    <div class="lyric-row cur" id="lCur">等待播放...</div>
+    <div class="lyric-row" id="lNext"></div>
+    <div class="lyric-row" id="lNext2"></div>
+   </div>
+   <div class="prog-wrap"><div class="prog-bar" id="progBar"><div class="prog-fill" id="progFill"></div></div>
+    <div class="time"><span id="tCur">0:00</span><span id="tTot">0:00</span></div></div>
+  </div>
+  <div class="viz" id="viz"></div>
+ </div>
+ <div class="ctrl">
+  <div class="ctrl-g">
+   <button class="btn sm" id="bVd">−</button><button class="btn md" id="bPrev">⏮</button>
+   <button class="btn lg" id="bPlay">▶</button><button class="btn md" id="bNext">⏭</button>
+   <button class="btn sm" id="bVu">+</button>
+  </div>
+  <div class="ctrl-g"><button class="btn sm on" id="bMode">🔁</button><button class="btn sm" id="bPl">☰ 歌单</button></div>
+ </div>
+ <div class="playlist" id="pl">
+  <div class="pl-head"><span>📁 SD:/MUSIC（<span id="plCnt">0</span>首）</span><span style="cursor:pointer" id="plClose">✕ 返回</span></div>
+  <div class="pl-list" id="plList"></div>
+  <div class="pl-foot">← → 切曲 · 空格 播放/暂停 · ↑↓ 音量 · M 切换模式 · Enter 歌单</div>
+ </div>
+</div></div>
+<div class="hint">点击控件或 <kbd>←</kbd><kbd>→</kbd> 切曲 <kbd>空格</kbd> 播放暂停 <kbd>↑</kbd><kbd>↓</kbd> 音量 <kbd>M</kbd> 切换模式 <kbd>Enter</kbd> 歌单</div>
+<script>
+const LYRICS={
+ 0:[[0,"夜空中最亮的星"],[5,"能否听清"],[10,"那仰望的人"],[15,"心底的孤独与叹息"],[22,"夜空中最亮的星"],[28,"能否记起"],[35,"曾与我同行"],[42,"消失在风里的身影"],[50,"我祈祷拥有一颗透明的心灵"],[60,"和会流泪的眼睛"],[70,"给我再去相信的勇气"],[80,"越过谎言去拥抱你"],[90,"每当我找不到存在的意义"],[100,"每当我迷失在黑夜里"],[110,"夜空中最亮的星"],[120,"请指引我靠近你"]],
+ 1:[[0,"故事的小黄花"],[5,"从出生那年就飘着"],[12,"童年的荡秋千"],[18,"随记忆一直晃到现在"],[26,"Re So So Si Do Si La"],[32,"So La Si Si Si Si La Si La So"],[40,"吹着前奏望着天空"],[48,"我想起花瓣试着掉落"],[56,"为你翘课的那一天"],[62,"花落的那天"],[68,"教室的那一间"],[74,"我怎么看不见"]],
+ 2:[[0,"这一路上走走停停"],[6,"顺着少年漂流的痕迹"],[14,"迈出车站的前一刻"],[22,"竟有些犹豫"],[30,"不禁笑这近乡情怯"],[38,"仍无可避免"],[46,"而长野的天依旧那么暖"],[54,"风吹起了从前"],[62,"从前初识这世间万般流连"],[72,"看着天边似在眼前"],[82,"也甘愿赴汤蹈火去走它一遍"]]
+};
+const DEFAULT_LYRIC=[[0,"暂无歌词"],[999,"请欣赏纯音乐"]];
+const LIB=[
+ {t:"夜空中最亮的星",a:"逃跑计划",d:253,f:"MP3",b:"320kbps"},
+ {t:"晴天",a:"周杰伦",d:269,f:"MP3",b:"320kbps"},
+ {t:"起风了",a:"买辣椒也用券",d:305,f:"FLAC",b:"16bit/44.1k"},
+ {t:"平凡之路",a:"朴树",d:296,f:"MP3",b:"320kbps"},
+ {t:"Bohemian Rhapsody",a:"Queen",d:354,f:"FLAC",b:"24bit/96k"},
+ {t:"Canon in D",a:"Pachelbel",d:312,f:"WAV",b:"16bit/44.1k"},
+ {t:"River Flows in You",a:"Yiruma",d:218,f:"MP3",b:"256kbps"},
+ {t:"卡农摇滚版",a:"Victor Wooten",d:241,f:"MP3",b:"320kbps"}];
+const MODES=["🔁 列表循环","🔂 单曲循环","🔀 随机播放"];
+let i=0,playing=true,sec=0,vol=70,mode=0,timer=null,curLyricIdx=0,volHideTimer=null;
+const $=id=>document.getElementById(id), fmt=s=>{const m=s/60|0;return m+":"+(s%60<10?"0":"")+s%60};
+
+// 仅同步数值，不触发侧边条（用于初始化/切歌）
+function syncVol(){
+ $("sideVolFill").style.height=vol+"%";
+ $("sideVolTxt").textContent=vol;
+ $("volTag").textContent="🔊"+vol;
+}
+
+// 用户操作时调用：更新数值 + 显示侧边条 + 启动隐藏定时器
+function onVolChange(delta){
+ vol=Math.max(0,Math.min(100,vol+delta));
+ syncVol();
+ $("sideVol").classList.add("show");
+ clearTimeout(volHideTimer);
+ volHideTimer=setTimeout(()=>{$("sideVol").classList.remove("show")},1500);
+}
+
+function getLyrics(){return LYRICS[i]||DEFAULT_LYRIC}
+function updateLyric(){
+ const lrc=getLyrics();let idx=0;
+ for(let k=0;k<lrc.length;k++){if(lrc[k][0]<=sec)idx=k;else break}
+ if(idx===curLyricIdx&&$("lCur").textContent!=="")return;
+ curLyricIdx=idx;
+ $("lCur").textContent=lrc[idx]?lrc[idx][1]:"";
+ $("lPrev").textContent=lrc[idx-1]?lrc[idx-1][1]:"";
+ $("lNext").textContent=lrc[idx+1]?lrc[idx+1][1]:"";
+ $("lNext2").textContent=lrc[idx+2]?lrc[idx+2][1]:"";
+ $("lCur").classList.remove("cur");void $("lCur").offsetWidth;$("lCur").classList.add("cur");
+}
+
+function render(){
+ const s=LIB[i];$("title").textContent=s.t;$("artist").textContent=s.a;$("statusTitle").textContent=s.t+" — "+s.a;
+ $("idxTag").textContent=(i+1)+"/"+LIB.length;$("tTot").textContent=fmt(s.d);
+ $("modeTag").textContent=MODES[mode];$("bMode").textContent=MODES[mode].split(" ")[0];
+ document.querySelectorAll(".pl-item").forEach((el,k)=>el.classList.toggle("cur",k===i));
+ document.querySelector(".cover-art").style.background=`linear-gradient(135deg,hsl(${i*47%360},30%,18%),hsl(${(i*47+40)%360},35%,26%))`;
+ curLyricIdx=-1;updateLyric();syncVol(); // 仅同步数值，不触发侧边条
+}
+
+function buildPl(){$("plCnt").textContent=LIB.length;const el=$("plList");el.innerHTML="";
+ LIB.forEach((s,k)=>{const d=document.createElement("div");d.className="pl-item"+(k===i?" cur":"");
+  d.innerHTML=`<span class="n">${k+1}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${s.t}</span><span style="color:var(--t2);margin-left:auto">${fmt(s.d)}</span>`;
+  d.onclick=()=>{i=k;sec=0;show();render()};el.appendChild(d)})}
+
+function show(){$("dot").className=playing?"dot":"dot pause";$("stateText").textContent=playing?"正在播放":"已暂停";
+ $("bPlay").textContent=playing?"⏸":"▶";playing?$("cover").classList.add("playing"):$("cover").classList.remove("playing")}
+
+function nextByMode(){
+ if(mode===1){sec=0;return}
+ if(mode===2){let r=Math.floor(Math.random()*LIB.length);while(r===i&&LIB.length>1)r=Math.floor(Math.random()*LIB.length);i=r;sec=0;return}
+ i=(i+1)%LIB.length;sec=0;
+}
+
+function tick(){if(!playing)return;sec++;
+ if(sec>=LIB[i].d){nextByMode();$("progFill").style.width="0";$("tCur").textContent="0:00";render();return}
+ $("progFill").style.width=(sec/LIB[i].d*100)+"%";$("tCur").textContent=fmt(sec);updateLyric();vizStep()}
+
+function start(){clearInterval(timer);timer=setInterval(tick,1000)}
+function next(){nextByMode();$("progFill").style.width="0";$("tCur").textContent="0:00";render()}
+function prev(){sec>3?sec=0:i=(i-1+LIB.length)%LIB.length;sec=0;$("progFill").style.width="0";$("tCur").textContent="0:00";render()}
+function vizStep(){document.querySelectorAll("#viz b").forEach(b=>b.style.height=(3+Math.random()*24)+"px")}
+
+$("progBar").onclick=e=>{const r=e.currentTarget.getBoundingClientRect();sec=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*LIB[i].d|0;
+ $("progFill").style.width=(sec/LIB[i].d*100)+"%";$("tCur").textContent=fmt(sec);updateLyric()};
+for(let k=0;k<8;k++){const b=document.createElement("b");b.style.height="4px";$("viz").appendChild(b)}
+setInterval(()=>playing&&vizStep(),180);
+
+$("bPlay").onclick=()=>{playing=!playing;show();if(playing)start()};
+$("bNext").onclick=next;$("bPrev").onclick=prev;
+$("bVd").onclick=()=>onVolChange(-5); // 统一走用户操作入口
+$("bVu").onclick=()=>onVolChange(5);
+$("bMode").onclick=()=>{mode=(mode+1)%MODES.length;render()};
+$("bPl").onclick=()=>$("pl").classList.toggle("show");
+$("plClose").onclick=()=>$("pl").classList.remove("show");
+
+document.onkeydown=e=>{if(e.code==="Space"){e.preventDefault();playing=!playing;show();if(playing)start()}
+ else if(e.code==="ArrowRight")next();else if(e.code==="ArrowLeft")prev();
+ else if(e.code==="ArrowUp")onVolChange(5); // 统一走用户操作入口
+ else if(e.code==="ArrowDown")onVolChange(-5);
+ else if(e.code==="KeyM"){mode=(mode+1)%MODES.length;render()}
+ else if(e.code==="Enter")$("pl").classList.toggle("show")};
+
+buildPl();render();show();start();
+</script>
+</body>
+</html>

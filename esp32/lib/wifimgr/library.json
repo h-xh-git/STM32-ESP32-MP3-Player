@@ -1,0 +1,11 @@
+{
+  "name": "wifimgr",
+  "version": "1.0.0",
+  "description": "ESP32-S3 multi-WiFi manager: NVS-persisted credential table + web config form",
+  "keywords": "wifi, nvs, preferences, web, config",
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "build": {
+    "srcDir": "src"
+  }
+}

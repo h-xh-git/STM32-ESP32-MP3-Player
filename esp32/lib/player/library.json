@@ -1,0 +1,8 @@
+{
+  "name": "player",
+  "version": "1.0.0",
+  "description": "ESP32-S3 MP3 player: UART stream -> Helix decode -> I2S out",
+  "build": {
+    "flags": []
+  }
+}

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>双板 MP3 播放器 · 引脚接线图 v1.0</title>
+<style>
+  :root{--bg:#0B0E14;--sf:#151A23;--card:#1C2333;--bd:#263045;--t1:#E8EDF4;--t2:#7A8BA6;--pri:#4FC3F7;--acc:#FFD54F;--ok:#66BB6A;--warn:#FF7043}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--t1);font-family:"Microsoft YaHei","微软雅黑",Segoe UI,sans-serif;line-height:1.6}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 60px}
+  h1{font-size:24px;margin:0 0 4px}
+  h1 span{color:var(--pri)}
+  .sub{color:var(--t2);font-size:13px;margin-bottom:20px}
+  h2{font-size:17px;margin:30px 0 10px;padding-left:10px;border-left:4px solid var(--pri)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border-radius:8px;overflow:hidden}
+  th,td{padding:7px 10px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+  th{background:var(--sf);color:var(--t2);font-weight:600;font-size:12.5px;letter-spacing:.4px}
+  tr:last-child td{border-bottom:none}
+  code{font-family:Consolas,monospace;background:#0E1420;border:1px solid var(--bd);border-radius:4px;padding:1px 5px;color:var(--acc);font-size:12.5px}
+  .pn{font-family:Consolas,monospace;color:var(--pri);font-weight:700}
+  .note{background:#2A1B12;border:1px solid #7A3B1E;border-left:5px solid var(--warn);border-radius:8px;padding:14px 18px;font-size:13.5px}
+  .note b{color:var(--warn)}
+  .note ul{margin:8px 0 0;padding-left:20px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .diagram{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:6px}
+  svg{width:100%;height:auto;display:block}
+  .tag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:10px;background:#12303C;color:var(--pri);border:1px solid #1E5A70;margin-left:6px}
+  footer{margin-top:34px;color:var(--t2);font-size:12px;border-top:1px solid var(--bd);padding-top:12px}
+  @media print{body{background:#fff;color:#000}.card,table{background:#fff}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>双板 MP3 播放器 · <span>引脚接线图</span> <span class="tag">v1.0 · 与固件代码一致</span></h1>
+  <div class="sub">STM32F407VET6 天空星（存储 / 界面 / 按键）＋ ESP32-S3 N16R8（MP3 软解 / I2S 输出）＋ MAX98357A（D 类功放）→ 8Ω 喇叭</div>
+
+  <div class="note">
+    <b>接线前必读（4 条）</b>
+    <ul>
+      <li><b>共地</b>：STM32、ESP32、MAX98357A、5V 电源的 GND 必须全部连在一起，否则串口乱码、音频全是噪声。</li>
+      <li><b>MAX98357A 用 5V 独立供电（≥1A）</b>，不要用 3.3V；它与两块板的信号线是 3.3V 电平，可以直连。</li>
+      <li><b>喇叭接 OUT+ / OUT− 差分</b>，OUT− <b>绝对不能</b>接 GND，也不能把喇叭任一端接地。</li>
+      <li><b>ESP32 可用 IO</b>：避开 GPIO26–32（OPI PSRAM 占用）、GPIO19/20（原生 USB）、GPIO43/44（UART0 日志/烧录）、GPIO0/3/45/46（strapping）。本方案用的 GPIO5/6/7/8/17/18/48 全部安全。</li>
+    </ul>
+  </div>
+
+  <h2>1 · 系统连线框图</h2>
+  <div class="diagram">
+  <svg viewBox="0 0 1040 600" xmlns="http://www.w3.org/2000/svg" font-family="Consolas,Microsoft YaHei,monospace" font-size="12">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#4FC3F7"/>
+      </marker>
+      <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD54F"/>
+      </marker>
+    </defs>
+
+    <!-- left peripherals -->
+    <rect x="16" y="30" width="176" height="86" rx="8" fill="#1C2333" stroke="#263045"/>
+    <text x="104" y="56" fill="#E8EDF4" text-anchor="middle" font-size="13">ST7789 2.4&#34; TFT</text>
+    <text x="104" y="76" fill="#7A8BA6" text-anchor="middle">SPI1 320x240 横版</text>
+    <text x="104" y="96" fill="#4FC3F7" text-anchor="middle">SCK/MOSI/CS/DC/RST/BLK</text>
+
+    <rect x="16" y="146" width="176" height="106" rx="8" fill="#1C2333" stroke="#263045"/>
+    <text x="104" y="172" fill="#E8EDF4" text-anchor="middle" font-size="13">5 个独立按键</text>
+    <text x="104" y="194" fill="#7A8BA6" text-anchor="middle">引脚 - 按键 - GND</text>
+    <text x="104" y="214" fill="#4FC3F7" text-anchor="middle">PC0 PC1 PC2 PC3 PC4</text>
+    <text x="104" y="234" fill="#7A8BA6" text-anchor="middle">内部上拉，按下为低</text>
+
+    <rect x="16" y="282" width="176" height="86" rx="8" fill="#1C2333" stroke="#263045"/>
+    <text x="104" y="308" fill="#E8EDF4" text-anchor="middle" font-size="13">TF 卡座 (microSD)</text>
+    <text x="104" y="328" fill="#7A8BA6" text-anchor="middle">SDIO 4 位 · FAT32</text>
+    <text x="104" y="348" fill="#4FC3F7" text-anchor="middle">PC8-PC12 / PD2 / PD3</text>
+
+    <rect x="16" y="380" width="176" height="76" rx="8" fill="#1C2333" stroke="#263045"/>
+    <text x="104" y="404" fill="#E8EDF4" text-anchor="middle" font-size="13">按键提示音蜂鸣器</text>
+    <text x="104" y="424" fill="#7A8BA6" text-anchor="middle">有源 · 低电平触发</text>
+    <text x="104" y="444" fill="#4FC3F7" text-anchor="middle">PB8 · 内部上拉</text>
+
+    <!-- STM32 -->
+    <rect x="272" y="30" width="236" height="440" rx="10" fill="#151A23" stroke="#4FC3F7" stroke-width="1.6"/>
+    <text x="390" y="58" fill="#4FC3F7" text-anchor="middle" font-size="14">STM32F407VET6</text>
+    <text x="390" y="76" fill="#E8EDF4" text-anchor="middle" font-size="12">天空星 · 168MHz</text>
+    <text x="390" y="94" fill="#7A8BA6" text-anchor="middle" font-size="11">存储 / 界面 / 按键 / 协议主机</text>
+    <line x1="288" y1="106" x2="492" y2="106" stroke="#263045"/>
+    <text x="288" y="130" fill="#7A8BA6" font-size="11">TFT (SPI1)</text>
+    <text x="288" y="150" fill="#E8EDF4">PA5 SCK · PA7 MOSI · PA4 CS</text>
+    <text x="288" y="168" fill="#E8EDF4">PB0 DC · PB1 RST · PB10 BLK</text>
+    <text x="288" y="198" fill="#7A8BA6" font-size="11">按键 (上拉输入)</text>
+    <text x="288" y="218" fill="#E8EDF4">PC0 K1 · PC1 K2 · PC2 K3</text>
+    <text x="288" y="236" fill="#E8EDF4">PC3 K4 · PC4 K5</text>
+    <text x="288" y="252" fill="#7A8BA6" font-size="11">提示音 (PB8 推挽输出)</text>
+    <text x="288" y="266" fill="#7A8BA6" font-size="11">TF 卡 (SDIO 4bit)</text>
+    <text x="288" y="286" fill="#E8EDF4">PC8 D0 · PC9 D1 · PC10 D2</text>
+    <text x="288" y="304" fill="#E8EDF4">PC11 D3 · PC12 CK</text>
+    <text x="288" y="322" fill="#E8EDF4">PD2 CMD · PD3 卡检测</text>
+    <text x="288" y="352" fill="#7A8BA6" font-size="11">与 ESP32 通信 (USART2)</text>
+    <text x="288" y="372" fill="#FFD54F">PA2 TX →</text>
+    <text x="288" y="390" fill="#FFD54F">PA3 RX ←</text>
+    <text x="288" y="410" fill="#7A8BA6" font-size="11">1 Mbps · 8N1</text>
+    <text x="288" y="440" fill="#7A8BA6" font-size="11">调试日志 (USART1, 115200)</text>
+    <text x="288" y="458" fill="#E8EDF4">PA9 TX · PA10 RX → 2x5P 排针</text>
+
+    <!-- ESP32 -->
+    <rect x="584" y="30" width="212" height="440" rx="10" fill="#151A23" stroke="#66BB6A" stroke-width="1.6"/>
+    <text x="690" y="58" fill="#66BB6A" text-anchor="middle" font-size="14">ESP32-S3 N16R8</text>
+    <text x="690" y="76" fill="#E8EDF4" text-anchor="middle" font-size="12">16MB Flash / 8MB OPI PSRAM</text>
+    <text x="690" y="94" fill="#7A8BA6" text-anchor="middle" font-size="11">MP3 软解 / 环形缓冲 / I2S</text>
+    <line x1="600" y1="106" x2="780" y2="106" stroke="#263045"/>
+    <text x="600" y="130" fill="#7A8BA6" font-size="11">与 STM32 通信 (Serial1)</text>
+    <text x="600" y="150" fill="#FFD54F">GPIO17 RX ← PA2</text>
+    <text x="600" y="168" fill="#FFD54F">GPIO18 TX → PA3</text>
+    <text x="600" y="198" fill="#7A8BA6" font-size="11">I2S 输出</text>
+    <text x="600" y="218" fill="#E8EDF4">GPIO5 BCLK</text>
+    <text x="600" y="236" fill="#E8EDF4">GPIO6 LRCK (WS)</text>
+    <text x="600" y="254" fill="#E8EDF4">GPIO7 DIN (SD)</text>
+    <text x="600" y="272" fill="#7A8BA6" font-size="11">功放 SD/MODE → 接 3V3（常开）</text>
+    <text x="600" y="302" fill="#7A8BA6" font-size="11">状态指示</text>
+    <text x="600" y="322" fill="#E8EDF4">GPIO48 板载 RGB LED</text>
+    <text x="600" y="352" fill="#7A8BA6" font-size="11">日志 / 烧录</text>
+    <text x="600" y="372" fill="#E8EDF4">USB-C (CH340, UART0)</text>
+    <text x="600" y="390" fill="#E8EDF4">GPIO43 TX · GPIO44 RX</text>
+    <text x="600" y="420" fill="#7A8BA6" font-size="11">保留：GPIO26-32 PSRAM</text>
+    <text x="600" y="438" fill="#7A8BA6" font-size="11">GPIO19/20 USB · 0/3/45/46 STRAP</text>
+
+    <!-- AMP -->
+    <rect x="852" y="112" width="172" height="152" rx="10" fill="#151A23" stroke="#FFD54F" stroke-width="1.6"/>
+    <text x="938" y="138" fill="#FFD54F" text-anchor="middle" font-size="14">MAX98357A</text>
+    <text x="938" y="158" fill="#E8EDF4" text-anchor="middle" font-size="11">I2S D 类功放 3.2W</text>
+    <line x1="866" y1="170" x2="1010" y2="170" stroke="#263045"/>
+    <text x="866" y="192" fill="#E8EDF4" font-size="11">BCLK / LRC / DIN</text>
+    <text x="866" y="211" fill="#E8EDF4" font-size="11">SD  (增益/静音)</text>
+    <text x="866" y="230" fill="#E8EDF4" font-size="11">VIN = 5V (≥1A)</text>
+    <text x="866" y="249" fill="#E8EDF4" font-size="11">GND 共地</text>
+
+    <!-- Speaker -->
+    <circle cx="938" cy="360" r="46" fill="#1C2333" stroke="#263045"/>
+    <circle cx="938" cy="360" r="24" fill="#0B0E14" stroke="#4FC3F7"/>
+    <text x="938" y="428" fill="#E8EDF4" text-anchor="middle" font-size="12">8Ω 喇叭</text>
+    <text x="938" y="446" fill="#FF7043" text-anchor="middle" font-size="11">OUT+ / OUT− 差分</text>
+
+    <!-- links -->
+    <line x1="192" y1="73" x2="268" y2="140" stroke="#4FC3F7" stroke-width="1.4" marker-end="url(#a)"/>
+    <line x1="192" y1="196" x2="268" y2="220" stroke="#4FC3F7" stroke-width="1.4" marker-end="url(#a)"/>
+    <line x1="192" y1="322" x2="268" y2="300" stroke="#4FC3F7" stroke-width="1.4" marker-end="url(#a)"/>
+    <line x1="192" y1="418" x2="268" y2="252" stroke="#4FC3F7" stroke-width="1.4" marker-end="url(#a)"/>
+
+    <line x1="508" y1="372" x2="580" y2="150" stroke="#FFD54F" stroke-width="1.6" marker-end="url(#b)"/>
+    <line x1="580" y1="182" x2="508" y2="382" stroke="#FFD54F" stroke-width="1.6" marker-end="url(#b)"/>
+    <text x="545" y="300" fill="#FFD54F" text-anchor="middle" font-size="11" transform="rotate(-63 545 300)">USART2 1Mbps</text>
+
+    <line x1="796" y1="140" x2="848" y2="150" stroke="#66BB6A" stroke-width="1.6" marker-end="url(#a)"/>
+    <text x="822" y="126" fill="#66BB6A" font-size="11" text-anchor="middle">I2S</text>
+    <line x1="938" y1="264" x2="938" y2="310" stroke="#FFD54F" stroke-width="1.6" marker-end="url(#b)"/>
+
+    <!-- power -->
+    <rect x="300" y="510" width="420" height="60" rx="8" fill="#1C2333" stroke="#263045" stroke-dasharray="5 4"/>
+    <text x="510" y="534" fill="#E8EDF4" text-anchor="middle" font-size="13">5V / 2A 电源  →  三块板 VIN/5V，GND 全部互连</text>
+    <text x="510" y="556" fill="#7A8BA6" text-anchor="middle" font-size="11">TFT 逻辑与 SD 卡用 3.3V（各板板载 LDO 供给），信号线一律 3.3V</text>
+    <line x1="390" y1="510" x2="390" y2="474" stroke="#263045" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    <line x1="640" y1="510" x2="640" y2="474" stroke="#263045" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    <line x1="800" y1="510" x2="938" y2="266" stroke="#263045" stroke-dasharray="5 4" marker-end="url(#a)"/>
+  </svg>
+  </div>
+
+  <h2>2 · STM32 天空星 → TFT（ST7789 2.4&#34; SPI 屏）</h2>
+  <table>
+    <tr><th style="width:22%">TFT 丝印</th><th style="width:20%">STM32 引脚</th><th>说明</th></tr>
+    <tr><td>VCC</td><td><span class="pn">3.3V</span></td><td>逻辑供电（模块自带 3.3V 稳压时也可接 5V，按你的模块丝印）</td></tr>
+    <tr><td>GND</td><td><span class="pn">GND</span></td><td>共地</td></tr>
+    <tr><td>SCK / CLK</td><td><span class="pn">PA5</span></td><td>SPI1_SCK</td></tr>
+    <tr><td>SDA / MOSI</td><td><span class="pn">PA7</span></td><td>SPI1_MOSI（只写，无 MISO）</td></tr>
+    <tr><td>CS</td><td><span class="pn">PA4</span></td><td>片选（软件控制）</td></tr>
+    <tr><td>DC / RS</td><td><span class="pn">PB0</span></td><td>数据 / 命令选择</td></tr>
+    <tr><td>RES / RST</td><td><span class="pn">PB1</span></td><td>硬件复位</td></tr>
+    <tr><td>BLK / LED</td><td><span class="pn">PB10</span></td><td>背光控制（高=亮）。<b>固件时序</b>：上电 -> 面板初始化 + 整屏填黑 -> 外设/文件系统/UI 初始化 -> 画好首帧 -> <b>最后才拉高开背光</b>，因此上电过程屏幕全黑、不会闪屏或露花屏。<br><b>硬件建议</b>：在 BLK 与 GND 之间加一个 <b>10 kΩ 下拉</b>——MCU 复位期间 PB10 是高阻，有下拉才能保证复位/上电瞬间背光一定是灭的（不加的话模块内部若有上拉，上电可能会亮一下）。</td></tr>
+    <tr><td>TP_* / SDO</td><td>不接</td><td>触摸屏与 MISO 未使用</td></tr>
+  </table>
+
+  <h2>3 · 独立按键与旋转编码器（内部上拉，按下接地）</h2>
+  <table>
+    <tr><th style="width:18%">按键</th><th style="width:18%">STM32 引脚</th><th>固件功能</th></tr>
+    <tr><td>K1</td><td><span class="pn">PC0</span></td><td><b>播放 / 暂停</b>（全屏歌词页内仍是播放 / 暂停）</td></tr>
+    <tr><td>K2</td><td><span class="pn">PC1</span></td><td>上一曲（歌单内：上移）</td></tr>
+    <tr><td>K3</td><td><span class="pn">PC2</span></td><td>下一曲（歌单内：下移）</td></tr>
+    <tr><td>K4</td><td><span class="pn">PC3</span></td><td>短按：<b>歌单</b>（开 / 关歌单浮层）</td></tr>
+    <tr><td>K5</td><td><span class="pn">PC4</span></td><td>短按：<b>切换播放模式</b>（顺序 / 单曲 / 随机；歌单内 K4/K5 均为返回 / 关闭）</td></tr>
+    <tr><td>旋钮 A 相</td><td><span class="pn">PC6</span></td><td>TIM8_CH1（AF3），硬件编码器模式</td></tr>
+    <tr><td>旋钮 B 相</td><td><span class="pn">PC7</span></td><td>TIM8_CH2（AF3）</td></tr>
+    <tr><td>旋钮按下 SW</td><td><span class="pn">PD12</span></td><td>按下接地；功能：<b>歌词模式</b>（主界面 = 进入全屏歌词页，歌词页内 = 返回主界面；播放 / 暂停改由 K1 负责）</td></tr>
+  </table>
+  <div class="sub" style="margin:8px 0 0">接法：每个按键 / 旋钮触点一端接对应引脚，另一端接 GND；内部上拉已开，无需外接电阻。旋转编码器每格 4 个计数（<code>ENC_COUNTS_PER_DETENT</code>），旋转 = 音量 ±5，旋钮按下 = 歌词模式开关（播放 / 暂停改为 K1）。<br>注意：<b>PC5 不接</b>（P1 起就空置）、<b>PC8 不可占用</b>——PC8 是 SDIO_D0，接旋钮按下会和 TF 卡抢数据线，所以按下脚用 PD12。</div>
+
+  <h2>4 · 按键提示音：有源蜂鸣器（PB8，低电平触发）</h2>
+  <table>
+    <tr><th style="width:22%">蜂鸣器模块</th><th style="width:20%">STM32 引脚</th><th>说明</th></tr>
+    <tr><td>VCC</td><td><span class="pn">3.3V</span></td><td>3 脚有源蜂鸣器模块（VCC / GND / IO），内部自带振荡电路，只占一个 GPIO，<b>不占用任何定时器 / PWM 通道</b></td></tr>
+    <tr><td>GND</td><td><span class="pn">GND</span></td><td>共地</td></tr>
+    <tr><td>IO / S / 信号</td><td><span class="pn">PB8</span></td><td><b>低电平触发</b>：PB8 拉低 = 响，拉高 = 静音。固件把 PB8 配成 <b>推挽输出 + 内部上拉</b>，复位 / 浮空期间被上拉钳在高电平，上电不会先“嘀”一声；<code>beep_set_enable(0)</code> 可全局静音。<br><b>固件时序</b>：按键 / 旋钮格数 → 30 ms（<code>BEEP_MS_KEY</code>），进出歌单浮层 / 歌词页 → 60 ms（<code>BEEP_MS_ACT</code>）；<code>beep_poll()</code> 在主循环里到点自动关，全程非阻塞、不 delay。</td></tr>
+  </table>
+  <div class="sub" style="margin:8px 0 0">为什么用有源模块：有源蜂鸣器内部自带振荡电路，MCU 只要给一个直流电平就能响；无源蜂鸣器需要 MCU 输出方波载波（要额外占一个定时器通道 + PWM），本项目用有源模块，所以 PB8 只做普通推挽输出即可。<br>引脚不冲突：TFT 用 PB0 / PB1 / PB10，按键 / 旋钮用 PC0-PC4 / PC6 / PC7 / PD12，SDIO 用 PC8-PC12 / PD2 / PD3，USART2 用 PA2 / PA3，PB8 单独留给提示音。</div>
+
+  <h2>5 · TF 卡（板载卡座，SDIO 4 位模式）</h2>
+  <table>
+    <tr><th style="width:22%">SD 信号</th><th style="width:20%">STM32 引脚</th><th>说明</th></tr>
+    <tr><td>D0 / DAT0</td><td><span class="pn">PC8</span></td><td>SDIO_D0</td></tr>
+    <tr><td>D1 / DAT1</td><td><span class="pn">PC9</span></td><td>SDIO_D1</td></tr>
+    <tr><td>D2 / DAT2</td><td><span class="pn">PC10</span></td><td>SDIO_D2</td></tr>
+    <tr><td>D3 / DAT3</td><td><span class="pn">PC11</span></td><td>SDIO_D3</td></tr>
+    <tr><td>CLK</td><td><span class="pn">PC12</span></td><td>SDIO_CK（识别 400kHz，传输 12MHz）</td></tr>
+    <tr><td>CMD</td><td><span class="pn">PD2</span></td><td>SDIO_CMD</td></tr>
+    <tr><td>卡检测 CD</td><td><span class="pn">PD3</span></td><td>低电平 = 卡在位</td></tr>
+  </table>
+  <div class="sub" style="margin:8px 0 0">天空星底板板载卡座已按上表硬连线，通常无需飞线；仅在底板未引出这些引脚时才需要外接卡座。卡请格式化为 <b>FAT32</b>，歌曲放根目录或 <code>/MUSIC</code> 下。</div>
+
+  <h2>6 · STM32 ↔ ESP32-S3 串口互联（交叉接线）</h2>
+  <table>
+    <tr><th style="width:32%">STM32（USART2）</th><th style="width:14%">方向</th><th style="width:32%">ESP32-S3（Serial1）</th><th>说明</th></tr>
+    <tr><td><span class="pn">PA2</span> (TX)</td><td>→</td><td><span class="pn">GPIO17</span> (RX)</td><td>STM32 发给 ESP32 的帧（音频数据 + 状态）</td></tr>
+    <tr><td><span class="pn">PA3</span> (RX)</td><td>←</td><td><span class="pn">GPIO18</span> (TX)</td><td>ESP32 发给 STM32 的帧（控制 + 音频请求）</td></tr>
+    <tr><td><span class="pn">GND</span></td><td>—</td><td><span class="pn">GND</span></td><td>必须共地</td></tr>
+  </table>
+  <div class="sub" style="margin:8px 0 0">参数：<b>1 000 000 bps，8 数据位 / 无校验 / 1 停止位</b>（不要设 460800，带宽不够会爆音）。两边都是 3.3V 电平，直连，不要串 5V。</div>
+
+  <h2>7 · ESP32-S3 → MAX98357A → 喇叭</h2>
+  <table>
+    <tr><th style="width:22%">MAX98357A</th><th style="width:20%">ESP32-S3</th><th>说明</th></tr>
+    <tr><td>BCLK</td><td><span class="pn">GPIO5</span></td><td>I2S 位时钟</td></tr>
+    <tr><td>LRC / LRCLK / WS</td><td><span class="pn">GPIO6</span></td><td>I2S 左右声道时钟</td></tr>
+    <tr><td>DIN</td><td><span class="pn">GPIO7</span></td><td>I2S 数据（MAX98357A 无需 MCLK）</td></tr>
+    <tr><td>SD / MODE</td><td><b>接 3V3</b></td><td><b>注意：这不是单纯的使能脚，它同时选声道。</b>电压 &lt;0.16V = 关断；0.16~0.77V = 输出 (L+R)/2；0.77~1.4V = 只出右声道；<b>&gt;1.4V = 只出左声道</b>。引脚内部自带 100kΩ 下拉，所以想落在中间档必须外加对 Vin 的上拉电阻。<br><b>最终接法：SD 直接接 3V3（>1.4V，只出左声道）。</b>固件已把立体声下混成单声道并复制到左右两槽，因此不丢右声道内容。<br>实测：用 GPIO8 经 560kΩ 驱动 SD 时喇叭全程沙沙——该节点是高阻分压点，电平不稳会让功放在声道模式间来回跳；硬接 3V3 后干净。</td></tr>
+    <tr><td>VIN</td><td><span class="pn">5V</span></td><td>独立 5V ≥1A（功放瞬时电流大）</td></tr>
+    <tr><td>GND</td><td><span class="pn">GND</span></td><td>共地</td></tr>
+    <tr><td>GAIN</td><td>不接</td><td><b>实测本机悬空 = 9dB，也是当前推荐接法。</b>若大音量仍破音，想再多 6dB 余量就把它改成 <b>3dB 档：GAIN 经 100kΩ 接 Vin</b>（<b>注意：把 GAIN 直接接 GND 是 12dB，会更响更破，别接错</b>）。悬空 = 9dB（官方增益表，改动后需重新上电：<b>15dB = GAIN 经 100kΩ 接 GND</b>；12dB = GAIN 直接接 GND；<b>9dB = GAIN 悬空（本机实测采用）</b>；6dB = GAIN 直接接 Vin；<b>3dB = GAIN 经 100kΩ 接 Vin（余量最大档）</b>）</td></tr>
+    <tr><td>OUT+ / OUT−</td><td>喇叭 + / −</td><td><b>差分输出，OUT− 不得接地</b></td></tr>
+  </table>
+
+  <h2>8 · 调试串口（USART1，看 printf 日志）</h2>
+  <table>
+    <tr><th style="width:32%">STM32</th><th style="width:18%">方向</th><th>USB-TTL 模块</th></tr>
+    <tr><td><span class="pn">PA9</span> (TX)</td><td>→</td><td>RXD</td></tr>
+    <tr><td><span class="pn">PA10</span> (RX)</td><td>←</td><td>TXD</td></tr>
+    <tr><td><span class="pn">GND</span></td><td>—</td><td>GND</td></tr>
+  </table>
+  <div class="sub" style="margin:8px 0 0">波特率 <b>115200</b>。注意：printf 走的是板上的 <b>2×5P 调试排针</b>，不是 Type-C 口（Type-C 只给 ST-Link/串口下载用）。</div>
+
+  <h2>9 · 通电顺序建议</h2>
+  <table>
+    <tr><th style="width:8%">步骤</th><th style="width:34%">接线</th><th>验证点</th></tr>
+    <tr><td>1</td><td>STM32 + TFT + 按键 + TF 卡</td><td>屏幕出现播放器界面、歌单能打开、歌名/大小/时长正确</td></tr>
+    <tr><td>2</td><td>再加 STM32 ↔ ESP32 串口（先不接功放）</td><td>ESP32 串口能看到 STM32 的帧，STM32 心跳日志 <code>drops=0</code></td></tr>
+    <tr><td>3</td><td>再加 MAX98357A + 喇叭</td><td>按 K1 出声（旋钮按下现在进入<b>全屏歌词页</b>），位置进度条随播放前进</td></tr>
+  </table>
+
+  <footer>双板 MP3 播放器 · 引脚接线图 v1.0 · 引脚与 <code>bsp/lcd</code>、<code>bsp/key</code>、<code>bsp/sdio</code>、<code>bsp/uart2</code>、<code>bsp/uart</code> 源码一一对应。</footer>
+</div>
+</body>
+</html>

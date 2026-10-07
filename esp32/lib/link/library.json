@@ -1,0 +1,8 @@
+{
+  "name": "link",
+  "version": "1.0.0",
+  "description": "Inter-board UART link (UART1 @1Mbps, GPIO17/18)",
+  "build": {
+    "flags": []
+  }
+}

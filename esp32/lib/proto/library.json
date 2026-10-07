@@ -1,0 +1,8 @@
+{
+  "name": "proto",
+  "version": "1.0.0",
+  "description": "Inter-board UART framing protocol (AA55 + CRC-16/CCITT-FALSE)",
+  "build": {
+    "flags": []
+  }
+}

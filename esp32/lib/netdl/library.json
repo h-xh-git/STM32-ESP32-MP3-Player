@@ -1,0 +1,8 @@
+{
+  "name": "netdl",
+  "version": "1.0.0",
+  "description": "WiFi + HTTP streaming download pushed to STM32 over SPI (songs -> TF card)",
+  "build": {
+    "srcFilter": "+<*>"
+  }
+}

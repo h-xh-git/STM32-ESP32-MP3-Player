@@ -1,0 +1,12 @@
+{
+  "name": "mp3dec",
+  "version": "1.0.0",
+  "description": "Helix fixed-point MP3 decoder (RealNetworks RPSL/RCSL 1.0), C sources only, ported for Xtensa/ESP32",
+  "license": "RPSL-1.0",
+  "build": {
+    "flags": [
+      "-Wno-unused-variable",
+      "-Wno-unused-but-set-variable"
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+; *************************************************************
+; *** 双板 MP3 播放器 手写分散加载文件（RAM 优化）            ***
+; *** 主板 SRAM 0x20000000 (128 KB) + CCM 0x10000000 (64 KB)   ***
+; *************************************************************
+; 为什么用 CCM：cover.c 的封面解码缓冲（s_px/s_acc/s_accc/s_prev
+; 合计 65232 B）占了主板 SRAM 的一半以上，搬进 CCM 后主板 SRAM
+; 只剩 ≈57 KB 占用（余量 ≈71 KB）。外设 DMA 只有 SPI2 从机的
+; DMA1 Stream3/4（缓冲放在主板 SRAM，DMA1 读不到 CCM），CCM 仍只被 CPU 访问，因此安全。
+; uVision 侧：Options for Target -> Linker 取消 "Use Memory Layout
+; from Target Dialog"，Scatter File 指向本文件（Project.uvprojx 里
+; umfTarg=0 / useFile=1 / ScatterFile=Project_ccm.sct）。
+
+LR_IROM1 0x08000000 0x00080000  {    ; load region size_region
+  ER_IROM1 0x08000000 0x00080000  {  ; load address = execution address
+   *.o (RESET, +First)
+   *(InRoot$$Sections)
+   .ANY (+RO)
+  }
+  RW_CCM 0x10000000 0x00010000  {    ; CCM RAM：只能 CPU 访问
+   *(.ccmram)                        ; cover.c 的封面解码缓冲（ZI）
+  }
+  RW_IRAM1 0x20000000 0x00020000  {  ; 主板 SRAM：其余全部 RW/ZI
+   .ANY (+RW +ZI)
+  }
+}
